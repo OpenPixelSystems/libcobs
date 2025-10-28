@@ -42,6 +42,25 @@ int cobs_encode(const uint8_t *data, size_t data_len, uint8_t *encoded, size_t e
 	size_t encoded_count = 0;
 
 	for (size_t i = 0; i < data_len; i++) {
+
+		// Check for maximum zero count
+        if (count_since_last_zero == COBS_MAX_ZERO_COUNT) {
+            // Set the maximum zero count in the last zero byte, save the
+            // current byte as the last zero byte and reset the count since last
+            // zero
+            *last_zero = COBS_MAX_ZERO_COUNT;
+            last_zero = &encoded[++encoded_count];
+            count_since_last_zero = 1;
+
+            // Check for buffer overflow, +1 for zero count and +1 for delimiter
+			if ((encoded_count + 2) >= encoded_len) {
+				// Encoding failed, return -1
+				ERR("[%s:%d] (encoded_count + 2) >= encoded_len\n",
+				    __func__, __LINE__);
+				return -1;
+			}
+        }
+
 		// Check for buffer overflow, +1 for zero count and +1 for delimiter
 		if ((encoded_count + 2) >= encoded_len) {
 			// Encoding failed, return -1
@@ -57,23 +76,6 @@ int cobs_encode(const uint8_t *data, size_t data_len, uint8_t *encoded, size_t e
 			last_zero = &encoded[++encoded_count];
 			count_since_last_zero = 1;
 		} else {
-			// Check for maximum zero count
-			if (count_since_last_zero == COBS_MAX_ZERO_COUNT) {
-				// Set the maximum zero count in the last zero byte, save the
-				// current byte as the last zero byte and reset the count since last
-				// zero
-				*last_zero = COBS_MAX_ZERO_COUNT;
-				last_zero = &encoded[++encoded_count];
-				count_since_last_zero = 1;
-
-				// Check for buffer overflow, +1 for zero count and +1 for delimiter
-				if ((encoded_count + 2) >= encoded_len) {
-					// Encoding failed, return -1
-					ERR("[%s:%d] (encoded_count + 2) >= encoded_len\n",
-					    __func__, __LINE__);
-					return -1;
-				}
-			}
 
 			// Normal byte, copy the data byte to the encoded buffer
 			encoded[++encoded_count] = data[i];
