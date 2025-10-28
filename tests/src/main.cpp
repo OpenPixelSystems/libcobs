@@ -140,7 +140,7 @@ TEST(verify_encode_decode_0x00_0x01, success)
 TEST(verify_encode_decode_0x00_to_0xFE, success)
 {
 	uint8_t original[255] = {0};
-	uint8_t encoded[sizeof(original) + 2] = {0}; // +1 for zero counts and +1 for delimiter
+	uint8_t encoded[sizeof(original) + 3] = {0}; // +2 for zero counts and +1 for delimiter
 	uint8_t decoded[sizeof(original)] = {0};
 
 	for (int i = 0; i < sizeof(original); i++) {
@@ -148,7 +148,7 @@ TEST(verify_encode_decode_0x00_to_0xFE, success)
 	}
 
 	const int encoded_len = cobs_encode(original, sizeof(original), encoded, sizeof(encoded));
-	EXPECT_EQ(encoded_len, sizeof(encoded));
+	EXPECT_EQ(encoded_len, sizeof(encoded) - 1); //-1 because we have a 0 so size won't be worst case
 
 	const uint8_t encoded_check[] = {
 		0x01, 0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C,
@@ -284,7 +284,7 @@ TEST(verify_encode_decode_0x00_to_0xFF, success)
 TEST(verify_encode_0x00_at_0xFF, success)
 {
     uint8_t original[257] = {0};
-    uint8_t encoded[sizeof(original) + 3] = {0}; // +3 for zero counts and +1 for delimiter
+    uint8_t encoded[sizeof(original) + 3] = {0}; // +3 for potential zero counts and +1 for delimiter
     uint8_t decoded[sizeof(original)] = {0};
 
     for (int i = 0; i < sizeof(original); i++) {

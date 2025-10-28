@@ -37,6 +37,14 @@ int cobs_encode(const uint8_t *data, size_t data_len, uint8_t *encoded, size_t e
 		return -1;
 	}
 
+    // Check for worst case overhead length
+    size_t max_overhead = 1 + ((data_len + COBS_MAX_ZERO_COUNT - 2) / (COBS_MAX_ZERO_COUNT - 1)); // +1 for delimiter and +1 for n/254 rounded up
+    if (encoded_len < (data_len + max_overhead)) {
+        // Encoding failed, return -1
+        ERR("[%s:%d] potential overflow, encoded buf is too small\n", __func__, __LINE__);
+        return -1;
+    }
+
 	uint8_t *last_zero = encoded;
 	uint8_t count_since_last_zero = 1;
 	size_t encoded_count = 0;
@@ -51,22 +59,7 @@ int cobs_encode(const uint8_t *data, size_t data_len, uint8_t *encoded, size_t e
             *last_zero = COBS_MAX_ZERO_COUNT;
             last_zero = &encoded[++encoded_count];
             count_since_last_zero = 1;
-
-            // Check for buffer overflow, +1 for zero count and +1 for delimiter
-			if ((encoded_count + 2) >= encoded_len) {
-				// Encoding failed, return -1
-				ERR("[%s:%d] (encoded_count + 2) >= encoded_len\n",
-				    __func__, __LINE__);
-				return -1;
-			}
         }
-
-		// Check for buffer overflow, +1 for zero count and +1 for delimiter
-		if ((encoded_count + 2) >= encoded_len) {
-			// Encoding failed, return -1
-			ERR("[%s:%d] (encoded_count + 2) >= encoded_len\n", __func__, __LINE__);
-			return -1;
-		}
 
 		// Check for zero byte
 		if (data[i] == COBS_DELIMITER) {
